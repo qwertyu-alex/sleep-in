@@ -40,8 +40,10 @@ of leaving it running all night. It even works with the lid closed.
   you cancel, when you unplug, and even if the timer crashes.
 - **App or Terminal.** A native SwiftUI app and a `sleep-in` command share one
   timer, so you can start it in one and check it from the other.
-- **Native and up to date.** All Swift, with nothing else to install, and it
-  updates itself. The privileged helper runs only during a lid-closed session.
+- **Updates itself.** New versions download in the background and install when
+  you quit. See [Updates](#updates).
+- **Native and self-contained.** All Swift, with nothing else to install. The
+  privileged helper runs only during a lid-closed session.
 
 ## How it works
 
@@ -87,10 +89,7 @@ Sleep In runs on macOS 14 Sonoma or later on Apple silicon.
    unzip it, and move **Sleep In** to your Applications folder.
 2. Open **Sleep In**. The app is signed and notarized by Apple.
 
-Sleep In keeps itself up to date. It checks for a new version once a day,
-downloads it in the background, and installs it the next time you quit. To
-check now, choose **Sleep In → Check for Updates…**. Versions before 1.2.0
-can't update themselves; download the latest release once to get updates.
+From then on, Sleep In keeps itself up to date; see [Updates](#updates).
 
 To also use the `sleep-in` command in Terminal, link it from the app and add
 `~/.local/bin` to your `PATH`:
@@ -117,8 +116,9 @@ ln -s "$HOME/Applications/Sleep In.app/Contents/MacOS/sleep-in" ~/.local/bin/sle
 
 `build.sh` compiles, signs, and installs `~/Applications/Sleep In.app`,
 including the `sleep-in` command. Rerun it after editing anything in `cli/` or
-`gui/`. Builds from source don't update themselves, so a download never replaces
-your own build.
+`gui/`. The first build downloads Sparkle, the update framework, so it needs a
+network connection. Builds from source don't update themselves, so a download
+never replaces your own build.
 
 Without a Developer ID, you can still build the terminal command on its own.
 Everything but `--lid-closed` works:
@@ -126,6 +126,35 @@ Everything but `--lid-closed` works:
 ```sh
 xcrun swiftc -O cli/*.swift -o ~/.local/bin/sleep-in
 ```
+
+## Updates
+
+Downloaded copies of Sleep In update themselves:
+
+- Once a day, Sleep In checks the latest GitHub release for a newer version.
+- It downloads the update in the background and installs it the next time you
+  quit Sleep In, so a running timer is never interrupted.
+- To check right away, choose **Sleep In → Check for Updates…**.
+
+Updates use [Sparkle](https://sparkle-project.org). Sleep In installs an update
+only if it is signed with the release key whose public half is built into the
+app, and, like every release, it is notarized by Apple. A check just downloads
+the release's small `appcast.xml` file; Sparkle's optional system profile is
+turned off.
+
+To be asked before an update installs, or to stop checking altogether, run one
+of these and reopen Sleep In:
+
+```sh
+defaults write io.github.qwertyu-alex.sleep-in SUAutomaticallyUpdate -bool false   # ask first
+defaults write io.github.qwertyu-alex.sleep-in SUEnableAutomaticChecks -bool false # never check
+```
+
+To go back to automatic updates, delete the setting, for example with
+`defaults delete io.github.qwertyu-alex.sleep-in SUAutomaticallyUpdate`.
+
+Versions before 1.2.0 can't update themselves; download the latest release once.
+Builds from source never update themselves.
 
 ## Using the app
 
@@ -139,6 +168,7 @@ Open **Sleep In** from Spotlight or your Applications folder. It opens with the 
 | Start | Press <kbd>Return</kbd> or click **Start** |
 | Add time | **+15 min** or **+1 hour** while the timer runs |
 | Keep it running out of the way | Minimize the window |
+| Check for updates | Choose **Sleep In → Check for Updates…** |
 | Stop | Click **Cancel**, close the window, or quit; the app asks before closing or quitting |
 
 The timer also stops if the app crashes or is force-quit.
@@ -152,8 +182,9 @@ Close your MacBook on the charger and keep working, with no external display
 needed.
 
 1. Check **Keep awake with lid closed** before starting, or pass `--lid-closed`
-   in Terminal. Lid-closed mode needs the Sleep In app to be installed,
-   including when you start it from Terminal.
+   in Terminal. Lid-closed mode needs the Sleep In app; in Terminal, use the
+   `sleep-in` command linked from the app, which finds the app's Touch ID
+   helper beside it.
 2. Approve with Touch ID, or your login password when Touch ID is unavailable,
    such as with the lid closed. The countdown starts after approval. Cancel the
    prompt or click **Cancel** to abandon startup.
@@ -283,8 +314,14 @@ Touch ID approval makes sure only you can start it. See
 2. Turn off **Sleep In** under System Settings → General → Login Items &
    Extensions.
 3. Move **Sleep In** from Applications to the Trash.
-4. Remove `~/.local/share/sleep-in/` and the `~/.local/bin/sleep-in` link, if
-   you made one.
+4. Remove the timer's state, `~/.local/share/sleep-in/`, and the
+   `~/.local/bin/sleep-in` link, if you made one.
+5. Remove the app's settings and update downloads:
+
+   ```sh
+   defaults delete io.github.qwertyu-alex.sleep-in
+   rm -rf ~/Library/Caches/io.github.qwertyu-alex.sleep-in
+   ```
 
 ## Development
 
@@ -307,16 +344,21 @@ Touch ID approval makes sure only you can start it. See
 - `gui/fetch-sparkle.sh`: downloads the pinned [Sparkle](https://sparkle-project.org)
   release into `build/` and checks its checksum.
 - `gui/Resources/`: the moon-and-countdown logo for the app, Dock, and Finder.
+- `tests/`: the timer and lid-policy test programs, and `run.sh` to run them.
 - `docs/images/`: screenshots for this README.
 - `design/`: the original interface mockup.
+- `build/` and `dist/`: the downloaded Sparkle framework and release output. Git
+  ignores both.
 
 ### Building and signing
 
 `./gui/build.sh` signs the app with the first **Developer ID Application**
 certificate in your keychain; set `SLEEP_IN_SIGNING_IDENTITY` to choose
 another. Signing needs a network connection for Apple's timestamp. The build
-replaces the installed app only after signing succeeds, and a running timer
-keeps going; quit and reopen Sleep In afterward to use the new version.
+embeds Sparkle 2.10.0, re-signed with your certificate, without the XPC
+services that only sandboxed apps need. It replaces the installed app only after
+signing succeeds, and a running timer keeps going; quit and reopen Sleep In
+afterward to use the new version.
 
 The logo source is `gui/Resources/SleepIn.png`. After changing it, run
 `./gui/build-icon.sh` to regenerate all standard and Retina icon sizes, then
@@ -327,9 +369,11 @@ The logo source is `gui/Resources/SleepIn.png`. After changing it, run
 `./gui/release.sh 1.2.0 notes.md` builds the app into `dist/`, has Apple
 notarize it, staples the notarization ticket, and publishes the GitHub release
 `v1.2.0` with `notes.md` as its notes. Without a notes file, GitHub writes them.
-The release includes `Sleep-In.zip` and `appcast.xml`, the update feed that
-installed copies check through
-`releases/latest/download/appcast.xml`. Each new release becomes the update.
+The release includes `Sleep-In.zip` and `appcast.xml`. Installed copies read
+the feed at `releases/latest/download/appcast.xml`, so the newest release is
+the update they install within a day. Sparkle compares version numbers, so each
+release needs a higher one. Only release builds contain the feed address and the
+public update key; `release.sh` reads both from the repository and your keychain.
 
 Releasing needs two credentials, created once:
 
