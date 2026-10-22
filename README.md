@@ -1,14 +1,82 @@
-# Sleep In
+<p align="center">
+  <img src="docs/images/icon.png" width="128" height="128" alt="Sleep In icon">
+</p>
 
-Keep your Mac awake for a set time, then put it to sleep.
+<h1 align="center">Sleep In</h1>
 
-Start a long build, a download, or a coding agent before bed, and Sleep In
-keeps your Mac awake until the countdown ends, then puts it to sleep. It comes
-as a native Mac app and a terminal command that share one timer. An optional
-lid-closed mode keeps working with the lid shut while on the charger, with no
-external display needed.
+<p align="center">
+  <strong>Keep your Mac awake for a set time, then put it to sleep.</strong>
+</p>
 
-## Requirements
+<p align="center">
+  <a href="https://github.com/qwertyu-alex/sleep-in/actions/workflows/tests.yml"><img src="https://github.com/qwertyu-alex/sleep-in/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
+  <img src="https://img.shields.io/badge/macOS-14%2B-6c6af2?logo=apple&logoColor=white" alt="macOS 14 or later">
+  <img src="https://img.shields.io/badge/Apple%20silicon-arm64-6c6af2" alt="Apple silicon">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-6c6af2" alt="MIT license"></a>
+</p>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/hero-dark.png">
+    <img src="docs/images/hero-light.png" width="776" alt="The Sleep In window set to two hours with lid-closed mode on, next to a running countdown with 1:47:12 left">
+  </picture>
+</p>
+
+Start a long build, a big download, or a coding agent before bed. Sleep In
+keeps your Mac working until the countdown ends, then puts it to sleep instead
+of leaving it running all night. It even works with the lid closed.
+
+## Features
+
+- **Set it and walk away.** Tap a preset, scroll or drag the number, or just
+  type `1:30`. Sleep In shows exactly when your Mac will sleep.
+- **Works with the lid closed.** Close your MacBook on the charger and it keeps
+  working, with no external display needed. Approve with Touch ID.
+- **Puts your settings back.** Normal sleep returns when the timer ends, when
+  you cancel, when you unplug, and even if the timer crashes.
+- **App or Terminal.** A native SwiftUI app and a `sleep-in` command share one
+  timer, so you can start it in one and check it from the other.
+- **Small and dependency-free.** Swift and Python's standard library. The
+  privileged helper runs only during a lid-closed session.
+
+## How it works
+
+<table>
+  <tr>
+    <th width="33%">1. Set a time</th>
+    <th width="33%">2. Let it run</th>
+    <th width="33%">3. Your Mac sleeps</th>
+  </tr>
+  <tr>
+    <td align="center">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/images/set-time-dark.png">
+        <img src="docs/images/set-time-light.png" width="260" alt="Typing 1:30 into the duration field">
+      </picture>
+    </td>
+    <td align="center">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/images/countdown-dark.png">
+        <img src="docs/images/countdown-light.png" width="260" alt="A countdown ring with 1:47:12 left and buttons to add 15 minutes or an hour">
+      </picture>
+    </td>
+    <td align="center">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs/images/slept-dark.png">
+        <img src="docs/images/slept-light.png" width="260" alt="The window showing Slept at 1:30 AM">
+      </picture>
+    </td>
+  </tr>
+  <tr>
+    <td>Pick a preset, or type <code>90</code>, <code>1:30</code>, or <code>1h30</code>. Press <kbd>Return</kbd> to start.</td>
+    <td>The countdown keeps your Mac awake. Add time without restarting it.</td>
+    <td>When time is up, your Mac goes to sleep. The window shows when it slept.</td>
+  </tr>
+</table>
+
+## Install
+
+You need:
 
 - macOS 14 Sonoma or later on Apple silicon.
 - Apple's Command Line Tools (`xcode-select --install`), which provide Swift
@@ -19,7 +87,7 @@ external display needed.
   code signed by the same Developer ID team. The terminal command works without
   the app, except for `--lid-closed`.
 
-## Install
+Then:
 
 ```sh
 git clone https://github.com/qwertyu-alex/sleep-in.git
@@ -38,66 +106,45 @@ The links point into your clone, so keep it where it is. Edits to
 `bin/sleep-in` apply to the next timer run; rerun `./gui/build.sh` after
 editing Swift.
 
-## Mac app
+## Using the app
 
-Open `~/Applications/Sleep In.app` in Finder or search for **Sleep In** in
-Spotlight. You can also run `sleep-in-gui` from any terminal.
+Open **Sleep In** from Spotlight or `~/Applications`, or run `sleep-in-gui` in
+Terminal. It opens with the duration you used last.
 
-Set the time on the big number: click − or +, scroll or drag on it, or press
-↑ and ↓ (hold Shift to move by an hour). To type a time, click the number or
-just start typing, for example `90`, `1:30`, or `1h30`, then press Return.
-The presets set 30 minutes to 8 hours in one click. The window shows when your
-Mac will sleep, and opens with the duration you used last. Press Return or
-click **Start** to keep your Mac awake until the countdown ends.
+| To | Do this |
+| --- | --- |
+| Change the time | Click − or +, scroll or drag the number, or press <kbd>↑</kbd> <kbd>↓</kbd> (hold <kbd>Shift</kbd> to move by an hour) |
+| Type a time | Click the number or just start typing: `90`, `1:30`, or `1h30`, then press <kbd>Return</kbd> |
+| Pick a preset | **30m**, **1h**, **2h**, **4h**, or **8h** |
+| Start | Press <kbd>Return</kbd> or click **Start** |
+| Add time | **+15 min** or **+1 hour** while the timer runs |
+| Keep it running out of the way | Minimize the window |
+| Stop | Click **Cancel**, close the window, or quit; the app asks before closing or quitting |
 
-While the timer runs, **+15 min** and **+1 hour** add time without restarting
-it. **Cancel**, closing the window, and quitting the app all cancel the timer;
-the app asks before closing or quitting. Minimizing the window lets the timer
-continue. The timer also stops if the app crashes or is force-quit.
+The timer also stops if the app crashes or is force-quit.
 
 The app and the terminal command share one timer slot. A timer already running
 in Terminal must be cancelled there before a timer can be started in the app.
 
-## Terminal command
-
-The `sleep-in` command prevents idle sleep, then requests system sleep when its
-timer expires. It uses the built-in `caffeinate` and `pmset` tools.
-
-```sh
-sleep-in 1h                 # Stay awake for one hour, then sleep
-sleep-in 1h30m              # One hour and thirty minutes
-sleep-in status             # Show remaining time from another terminal
-sleep-in extend 15m         # Add time to the running timer
-sleep-in 2h --replace       # Restart the countdown at two hours
-sleep-in cancel             # Cancel from another terminal
-sleep-in 5s --dry-run       # Exercise the timer without putting the Mac to sleep
-sleep-in 2h --lid-closed    # Allow the lid to close while on the charger
-```
-
-The timer stays in the foreground with a live countdown. Press Ctrl+C or close
-the terminal to cancel and release the keep-awake assertion. Only one timer
-can run at a time.
-
-State lives in `~/.local/share/sleep-in/`. Errors appear in the terminal; you
-can also check `sleep-in status`.
-
 ## Lid-closed mode
 
-Without lid-closed mode, keep your laptop lid open: the timer only prevents
-idle sleep and does not change persistent power settings.
+Close your MacBook on the charger and keep working, with no external display
+needed.
 
-To keep working with the lid closed and just the charger connected, enable
-**Keep awake with lid closed** in the app before starting, or pass
-`--lid-closed` in Terminal. Lid-closed mode needs the Sleep In app to be
-installed, including when you start it from Terminal. Each start asks for
-Touch ID, or your login password when Touch ID is unavailable, such as with the
-lid closed. The countdown starts after approval, and the app remembers the
-checkbox for next time. Cancel the prompt or click **Cancel** to abandon
-startup.
+1. Check **Keep awake with lid closed** before starting, or pass `--lid-closed`
+   in Terminal. Lid-closed mode needs the Sleep In app to be installed,
+   including when you start it from Terminal.
+2. Approve with Touch ID, or your login password when Touch ID is unavailable,
+   such as with the lid closed. The countdown starts after approval. Cancel the
+   prompt or click **Cancel** to abandon startup.
+3. Lock your Mac with <kbd>Control</kbd>–<kbd>Command</kbd>–<kbd>Q</kbd>, then
+   close the lid. Disabling lid-close sleep can also prevent the usual
+   lock-on-sleep behavior.
 
 The first time, Sleep In asks macOS to allow its background helper and opens
 System Settings. Turn on **Sleep In** under **General → Login Items &
-Extensions**, then press **Start** again. This is needed once.
+Extensions**, then press **Start** again. This is needed once. The app
+remembers the checkbox for next time.
 
 Lid-closed mode controls macOS's system-wide `disablesleep` setting, and only
 while the Mac is running on AC power. Unplugging restores normal lid-close
@@ -105,8 +152,8 @@ sleep; reconnecting the charger enables the override again while the timer is
 still running. The running window shows which mode is active. While the
 override is active, manual sleep is blocked too.
 
-Lock your Mac with **Control–Command–Q** before closing the lid: disabling
-lid-close sleep can also prevent the usual lock-on-sleep behavior.
+Without lid-closed mode, keep your laptop lid open: the timer only prevents
+idle sleep and does not change persistent power settings.
 
 In Terminal, `--dry-run` with `--lid-closed` still changes lid-close behavior
 during the countdown. At the end it restores normal settings without sending a
@@ -138,6 +185,68 @@ If the Mac loses power or the root helper itself is force-killed, normal
 cleanup cannot run. Start and cancel another lid-closed session to recover, or
 restore sleep explicitly with `sudo pmset -a disablesleep 0`.
 
+## Terminal
+
+The `sleep-in` command does everything the app does, using the built-in
+`caffeinate` and `pmset` tools.
+
+```console
+$ sleep-in 2h
+Mac sleeps at Fri 01:30:00 (2h 0m 0s remaining).
+Keep this terminal open. Press Ctrl+C to cancel.
+Mac sleeps at Fri 01:30:00 (1h 47m 12s remaining).
+```
+
+The last line counts down live. From another terminal:
+
+```console
+$ sleep-in status
+Mac sleeps at Fri 01:30:00 (1h 47m 12s remaining).
+$ sleep-in extend 15m
+Mac sleeps at Fri 01:45:00 (2h 2m 12s remaining).
+$ sleep-in cancel
+Timer cancelled. Normal sleep settings restored.
+```
+
+| Command | What it does |
+| --- | --- |
+| `sleep-in 45m`, `sleep-in 1h30m` | Start a timer, using `h`, `m`, and `s` units, up to 7 days |
+| `sleep-in status` | Show the time remaining |
+| `sleep-in extend 15m` | Add time to the running timer |
+| `sleep-in cancel` | Stop the timer and restore normal sleep settings |
+| `--replace` | Restart a running timer with a new duration |
+| `--lid-closed` | Keep working with the lid closed on the charger |
+| `--dry-run` | Do everything except the final sleep request |
+| `--json` | Print machine-readable timer events |
+
+The timer stays in the foreground. Press Ctrl+C or close the terminal to cancel
+and release the keep-awake assertion. Only one timer can run at a time.
+
+State lives in `~/.local/share/sleep-in/`. Errors appear in the terminal; you
+can also check `sleep-in status`.
+
+## FAQ
+
+**Why not just use `caffeinate -t`?**
+`caffeinate` stops preventing sleep when its time is up, but it doesn't put
+your Mac to sleep; the Mac then sleeps whenever its own idle settings say so.
+It also can't keep a closed MacBook awake without an external display. Sleep
+In requests sleep the moment the timer ends and has a lid-closed mode.
+
+**Does it work on battery?**
+Yes. Only lid-closed mode needs the charger; on battery, closing the lid puts
+the Mac to sleep as usual.
+
+**What if my work finishes early, or runs late?**
+Sleep In doesn't watch your work; it sleeps at the deadline either way. Add
+time with **+15 min** or **+1 hour**, or `sleep-in extend`, if a job is
+running long.
+
+**Why does it ask for Touch ID?**
+Lid-closed mode changes a system-wide power setting through a root helper.
+Touch ID approval makes sure only you can start it. See
+[How the helper works](#how-the-helper-works).
+
 ## Limitations
 
 - Sleep In cannot prevent shutdown or a depleted battery.
@@ -145,8 +254,6 @@ restore sleep explicitly with `sudo pmset -a disablesleep 0`.
 - The display may turn off while the Mac keeps working.
 - The deadline is a fixed wall-clock time. If you manually sleep before then,
   an overdue timer requests sleep after the Mac wakes again.
-- The timer does not check whether your work is done; it requests sleep at the
-  deadline even if a job or agent is still busy.
 - A successful sleep request does not guarantee the Mac stays asleep if another
   device or scheduled event wakes it.
 
@@ -174,6 +281,7 @@ restore sleep explicitly with `sudo pmset -a disablesleep 0`.
 - `gui/LidSleepPolicy.swift`: when the daemon enables and restores sleep.
 - `gui/build.sh`: compiles, signs, and installs the app.
 - `gui/Resources/`: the moon-and-countdown logo for the app, Dock, and Finder.
+- `docs/images/`: screenshots for this README.
 - `design/`: the original interface mockup.
 
 ### Building and signing
