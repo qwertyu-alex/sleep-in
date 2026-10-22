@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sleep In — three directions</title>
+<style>
+  @font-face { font-family: 'SFR'; src: local('.SF NS Rounded'), url('file:///System/Library/Fonts/SFNSRounded.ttf'); font-weight: 1 1000; }
+  :root {
+    --accent: #6C6AF2; --accent-soft: rgba(108,106,242,.22); --accent-text: #A9A8FF;
+    --bg: #1f1f21; --fill: rgba(255,255,255,.075); --fill-hover: rgba(255,255,255,.12);
+    --text: #f2f2f4; --text2: rgba(235,235,245,.6); --text3: rgba(235,235,245,.36);
+  }
+  * { box-sizing: border-box; }
+  button, input { font-family: inherit; }
+  html, body { margin: 0; background: #0d0d0f; color: var(--text);
+    font: 13px/1.35 -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; -webkit-font-smoothing: antialiased; }
+  .board { padding: 34px 40px 40px; }
+  .board h1 { margin: 0; font-size: 20px; font-weight: 650; letter-spacing: -.01em; }
+  .board .lede { margin: 4px 0 28px; color: var(--text2); font-size: 13px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 320px); column-gap: 36px; align-items: start; }
+  .vhead h2 { margin: 0; font-size: 16px; font-weight: 650; display: flex; align-items: center; }
+  .vhead p { margin: 4px 0 18px; color: var(--text2); font-size: 12.5px; }
+  .tag { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; margin-right: 8px;
+    background: var(--accent-soft); color: var(--accent-text); font-size: 11px; font-weight: 700; }
+  .label { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text3); margin: 0 0 10px 2px; }
+  .label b { color: var(--accent-text); font-weight: 600; }
+  .notes { margin: 16px 2px 30px; padding: 0; list-style: none; color: var(--text2); font-size: 12px; }
+  .notes li { position: relative; padding-left: 14px; margin: 0 0 6px; }
+  .notes li::before { content: ''; position: absolute; left: 1px; top: 7px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); opacity: .8; }
+  .notes kbd { font-family: inherit; font-size: 11px; padding: 0 4px; border-radius: 4px; background: var(--fill); color: var(--text); }
+
+  .num { font-family: 'SFR', ui-rounded, -apple-system; font-variant-numeric: tabular-nums; }
+
+  /* Window chrome */
+  .win { width: 320px; background: var(--bg); border-radius: 12px; overflow: hidden; user-select: none;
+    box-shadow: inset 0 0 0 .5px rgba(255,255,255,.14), 0 0 0 .5px #000, 0 22px 60px rgba(0,0,0,.55); }
+  .bar { height: 30px; display: flex; align-items: center; padding: 0 12px; position: relative; }
+  .bar i { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; display: block; }
+  .bar i:nth-child(1) { background: #ff5f57; } .bar i:nth-child(2) { background: #febc2e; } .bar i:nth-child(3) { background: #3a3a3c; }
+  .bar span { position: absolute; left: 0; right: 0; text-align: center; font-size: 13px; font-weight: 600; color: var(--text2); pointer-events: none; }
+  .body { padding: 14px 22px 20px; }
+
+  /* Shared controls */
+  .chips { display: flex; gap: 6px; margin-top: 22px; }
+  .chip { flex: 1; height: 28px; border-radius: 14px; border: 0; background: var(--fill); color: var(--text);
+    font-size: 12.5px; font-weight: 500; cursor: pointer; }
+  .chip:hover { background: var(--fill-hover); }
+  .chip.on { background: var(--accent-soft); color: var(--accent-text); box-shadow: inset 0 0 0 1px rgba(140,138,255,.45); }
+  .primary, .secondary { width: 100%; height: 40px; border: 0; border-radius: 10px; cursor: pointer;
+    font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 18px; }
+  .primary { background: var(--accent); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.18); }
+  .primary:hover { filter: brightness(1.07); }
+  .primary .k { font-weight: 500; opacity: .55; font-size: 13px; }
+  .secondary { background: var(--fill); color: var(--text); }
+  .secondary:hover { background: var(--fill-hover); }
+  .test { display: flex; align-items: center; gap: 8px; margin-top: 14px; color: var(--text2); font-size: 12px; cursor: pointer; }
+  .sw { width: 26px; height: 15px; border-radius: 8px; background: rgba(255,255,255,.16); position: relative; transition: background .15s; flex: none; }
+  .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 11px; height: 11px; border-radius: 50%; background: #fff; transition: transform .15s; }
+  .sw.on { background: var(--accent); } .sw.on::after { transform: translateX(11px); }
+  .hint { text-align: center; color: var(--text3); font-size: 11px; margin-top: 2px; min-height: 14px; }
+  .foot { text-align: center; color: var(--text3); font-size: 11px; margin-top: 12px; }
+  .badge { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: #ffd27a; background: rgba(255,190,70,.14);
+    padding: 2px 7px; border-radius: 6px; }
+  .banner { display: flex; align-items: center; gap: 8px; background: rgba(72,199,116,.12); color: #8fe3aa;
+    border-radius: 9px; padding: 7px 10px; font-size: 12px; margin-bottom: 8px; }
+  .banner .x { margin-left: auto; color: var(--text3); cursor: pointer; }
+
+  /* A — stepper */
+  .dial { display: grid; grid-template-columns: 34px 1fr 34px; align-items: center; margin-top: 8px; }
+  .step { width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--fill); color: var(--text);
+    font: 300 22px/1 'SFR', -apple-system; display: grid; place-items: center; cursor: pointer; padding: 0 0 2px; }
+  .step:hover { background: var(--fill-hover); }
+  .time { text-align: center; border-radius: 12px; padding: 4px 0 6px; cursor: ns-resize; transition: background .15s; touch-action: none; }
+  .time:hover { background: rgba(255,255,255,.035); }
+  .time .big { font-size: 58px; font-weight: 300; letter-spacing: -.02em; }
+  .time .unit { font-size: 22px; font-weight: 400; color: var(--text2); margin: 0 6px 0 2px; }
+  .time .unit:last-child { margin-right: 0; }
+  .time input { width: 100%; background: transparent; border: 0; outline: 0; color: var(--text); text-align: center;
+    font-size: 46px; font-weight: 300; padding: 9px 0 10px; caret-color: var(--accent); }
+  .time.editing { background: rgba(108,106,242,.10); box-shadow: inset 0 0 0 1.5px var(--accent); cursor: text; }
+  .when { text-align: center; color: var(--text2); font-size: 13px; margin-top: 4px; }
+  .when b { color: var(--text); font-weight: 550; }
+  .ringwrap { position: relative; width: 208px; height: 208px; margin: 6px auto 0; }
+  .ringwrap svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+  .ringwrap .center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ringwrap .count { font-size: 44px; font-weight: 300; letter-spacing: -.01em; }
+  .ringwrap .sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .ringwrap .badge { margin-bottom: 6px; }
+
+  /* B — clock */
+  .dialwrap { width: 260px; margin: 2px auto 0; }
+  .dialwrap svg { display: block; width: 260px; height: 260px; cursor: pointer; touch-action: none; }
+  .dialwrap text { font-family: -apple-system, BlinkMacSystemFont, sans-serif; text-anchor: middle; }
+  .d-lab { font-size: 10px; font-weight: 600; letter-spacing: .08em; fill: var(--text3); }
+  .d-big { font-size: 36px; font-weight: 300; fill: var(--text); font-family: 'SFR', ui-rounded, -apple-system !important; font-variant-numeric: tabular-nums; }
+  .d-ap { font-size: 14px; font-weight: 400; fill: var(--text2); }
+  .d-sub { font-size: 12.5px; fill: var(--text2); }
+  .d-num { font-size: 10.5px; fill: var(--text3); dominant-baseline: central; }
+  .d-moon { font-size: 13px; fill: var(--accent); dominant-baseline: central; pointer-events: none; }
+  .b-row { display: flex; gap: 6px; margin-top: 14px; }
+  .b-row > * { flex: 1; margin-top: 0; height: 34px; border-radius: 9px; font-size: 13px; }
+
+  /* C — menu bar timeline */
+  .cwrap { width: 320px; position: relative; user-select: none; }
+  .menubar { width: 320px; height: 26px; border-radius: 8px; background: rgba(40,40,44,.9); box-shadow: inset 0 0 0 .5px rgba(255,255,255,.1);
+    display: flex; align-items: center; justify-content: flex-end; gap: 14px; padding: 0 12px; font-size: 13px; color: #eee; }
+  .menubar .mine { border-radius: 5px; padding: 1px 7px; display: flex; gap: 5px; align-items: center; }
+  .menubar .mine.on { background: rgba(255,255,255,.16); }
+  .menubar .dim { opacity: .6; }
+  .pop { position: relative; margin-top: 10px; background: #252528; border-radius: 12px; padding: 16px 16px 14px;
+    box-shadow: inset 0 0 0 .5px rgba(255,255,255,.14), 0 0 0 .5px #000, 0 22px 60px rgba(0,0,0,.55); }
+  .pop::before { content: ''; position: absolute; top: -6px; left: calc(var(--ax, 160px) - 6px); width: 12px; height: 12px;
+    background: #252528; transform: rotate(45deg); border-radius: 2px 0 0 0; box-shadow: inset .5px .5px 0 rgba(255,255,255,.14); }
+  .c-head { display: flex; align-items: flex-end; justify-content: space-between; }
+  .c-lab { font-size: 11.5px; color: var(--text2); }
+  .c-big { font-size: 34px; font-weight: 300; letter-spacing: -.01em; line-height: 1.1; }
+  .c-big .ap { font-size: 15px; color: var(--text2); margin-left: 5px; font-weight: 400; }
+  .c-dur { font-size: 12.5px; color: var(--text2); padding-bottom: 6px; }
+  .c-dur b { color: var(--text); font-weight: 550; }
+  .tl { position: relative; height: 54px; margin: 12px 0 8px; cursor: pointer; touch-action: none; }
+  .track { position: absolute; left: 0; right: 0; top: 14px; height: 8px; border-radius: 4px; background: rgba(255,255,255,.08); overflow: hidden; }
+  .fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, rgba(108,106,242,.5), var(--accent)); }
+  .tk { position: absolute; top: 28px; width: 1px; height: 4px; background: rgba(255,255,255,.16); }
+  .tk.maj { height: 7px; background: rgba(255,255,255,.34); }
+  .tll { position: absolute; top: 38px; transform: translateX(-50%); font-size: 10px; color: var(--text3); white-space: nowrap; }
+  .tll.now { left: 0; transform: none; }
+  .knob { position: absolute; top: 7px; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%; background: #fff; color: var(--accent);
+    display: grid; place-items: center; font-size: 13px; box-shadow: 0 1px 5px rgba(0,0,0,.45); pointer-events: none; }
+  .c-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .c-row .test { margin-top: 0; }
+  .c-row .chips { margin-top: 0; }
+  .chip.sm { flex: none; height: 30px; padding: 0 12px; border-radius: 8px; }
+  .primary.sm, .secondary.sm { width: auto; height: 30px; padding: 0 16px; margin-top: 0; font-size: 13px; border-radius: 8px; }
+</style>
+</head>
+<body>
+<div class="board">
+  <h1>Sleep In — three directions</h1>
+  <p class="lede">Three ways to set the time. The top windows work, so try each one (scroll, drag, ↑ ↓, Return). The bottom row shows each one while a timer runs.</p>
+  <div class="grid">
+    <div class="vhead"><h2><span class="tag">A</span>Stepper</h2><p>Duration first. Nudge a big number up or down.</p></div>
+    <div class="vhead"><h2><span class="tag">B</span>Clock</h2><p>Sleep time first. Drag the moon to when your Mac should sleep.</p></div>
+    <div class="vhead"><h2><span class="tag">C</span>Menu bar timeline</h2><p>No window. Drag along the next 12 hours, right from the menu bar.</p></div>
+
+    <div><div class="label">Set up · <b>try it</b></div><div class="win" id="liveA"></div></div>
+    <div><div class="label">Set up · <b>try it</b></div><div class="win" id="liveB"></div></div>
+    <div><div class="label">Set up · <b>try it</b></div><div class="cwrap" id="liveC"></div></div>
+
+    <ul class="notes">
+      <li>Scroll or drag the number, press <kbd>↑</kbd> <kbd>↓</kbd>, or use − / +.</li>
+      <li>Click the number to type <kbd>90</kbd>, <kbd>1:30</kbd>, or <kbd>1h30</kbd>.</li>
+      <li>Presets for the usual durations. The sleep time updates as you go.</li>
+    </ul>
+    <ul class="notes">
+      <li>Drag the moon around the clock. The arc is how long your Mac stays awake.</li>
+      <li>The sleep time is the big number, with the duration under it.</li>
+      <li>While it runs, drag the moon again to change it. Goes up to 12 hours.</li>
+    </ul>
+    <ul class="notes">
+      <li>Click ☾ in the menu bar. The countdown stays up there while it runs.</li>
+      <li>Drag the moon or click anywhere on the line. The ticks are real clock hours.</li>
+      <li>Same control while running. No window to keep open.</li>
+    </ul>
+
+    <div><div class="label">Running</div><div class="win" id="runA"></div></div>
+    <div><div class="label">Running</div><div class="win" id="runB"></div></div>
+    <div><div class="label">Running</div><div class="cwrap" id="runC"></div></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, '0');
+const fmtClock = d => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+const splitClock = d => fmtClock(d).split(/\s/);
+const fmtCount = sec => { sec = Math.max(0, Math.ceil(sec)); const h = Math.floor(sec / 3600), m = Math.floor(sec / 60) % 60, x = sec % 60;
+  return h ? `${h}:${pad(m)}:${pad(x)}` : `${m}:${pad(x)}`; };
+const fmtShort = sec => { const t = Math.floor(sec / 60), h = Math.floor(t / 60); return h ? `${h}:${pad(t % 60)}` : `${t % 60}m`; };
+const fmtDur = min => { min = Math.round(min); const h = Math.floor(min / 60), m = min % 60; return h ? `${h}h ${pad(m)}m` : `${m}m`; };
+const left = (s, now) => (s.deadline - now) / 1000;
+const bar = (s, now) => `<div class="bar"><i></i><i></i><i></i><span>${s.mode === 'running' ? `Sleep In — ${fmtCount(left(s, now))}` : 'Sleep In'}</span></div>`;
+const banner = s => s.banner ? `<div class="banner">✓ ${s.banner}<span class="x" data-a="dismiss">✕</span></div>` : '';
+const testRow = (s, label = "Test run: don't sleep at the end") =>
+  `<div class="test" data-a="test"><span class="sw${s.test ? ' on' : ''}"></span>${label}</div>`;
+const WIFI = '<svg width="15" height="11" viewBox="0 0 15 11" class="dim"><path d="M7.5 10.5 5.3 8.2a3.1 3.1 0 0 1 4.4 0Z M2.9 5.8a6.6 6.6 0 0 1 9.2 0l-1.2 1.2a4.9 4.9 0 0 0-6.8 0Z M.5 3.4a10 10 0 0 1 14 0l-1.2 1.2a8.3 8.3 0 0 0-11.6 0Z" fill="#eee"/></svg>';
+const BATT = '<svg width="24" height="11" viewBox="0 0 24 11" class="dim"><rect x=".5" y=".5" width="20" height="10" rx="3" fill="none" stroke="#eee"/><rect x="2" y="2" width="15" height="7" rx="1.5" fill="#eee"/><rect x="21.5" y="3.5" width="1.5" height="4" rx=".7" fill="#eee"/></svg>';
+
+/* A — stepper */
+const PRESETS = [[30, '30m'], [60, '1h'], [120, '2h'], [240, '4h'], [480, '8h']];
+const A = {
+  id: 'A', max: 1440, liveRunning: false,
+  frame(s, now) { return bar(s, now) + `<div class="body">${s.mode === 'running' ? this.running(s, now) : this.setup(s, now)}</div>`; },
+  big(min) {
+    const h = Math.floor(min / 60), m = min % 60;
+    if (!h) return `<span class="big num">${m}</span><span class="unit">m</span>`;
+    return `<span class="big num">${h}</span><span class="unit">h</span><span class="big num">${pad(m)}</span><span class="unit">m</span>`;
+  },
+  setup(s, now) {
+    const end = fmtClock(new Date(now.getTime() + s.min * 60000));
+    return banner(s) + `
+      <div class="dial">
+        <button class="step" data-a="minus">−</button>
+        <div class="time${s.editing ? ' editing' : ''}" data-a="time" data-drag data-wheel title="Scroll, drag, or click to type">
+          ${s.editing ? `<input class="num" value="${s.draft}" spellcheck="false">` : this.big(s.min)}
+        </div>
+        <button class="step" data-a="plus">+</button>
+      </div>
+      <div class="when">${s.test ? 'Test ends' : 'Mac sleeps'} at <b>${end}</b></div>
+      <div class="hint">${s.editing ? 'Type 90, 1:30, or 1h30 · ↩ to set' : ''}</div>
+      <div class="chips">${PRESETS.map(([v, l]) => `<button class="chip${v === s.min ? ' on' : ''}" data-a="preset" data-v="${v}">${l}</button>`).join('')}</div>
+      <button class="primary" data-a="start">Start <span class="k">↩</span></button>
+      ${testRow(s)}`;
+  },
+  running(s, now) {
+    const sec = left(s, now), frac = Math.max(0, sec / s.total), C = 2 * Math.PI * 96;
+    return `
+      <div class="ringwrap">
+        <svg viewBox="0 0 208 208"><circle cx="104" cy="104" r="96" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="7"/>
+          <circle cx="104" cy="104" r="96" fill="none" stroke="var(--accent)" stroke-width="7" stroke-linecap="round"
+            stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - frac)}"/></svg>
+        <div class="center">
+          ${s.test ? '<span class="badge">TEST</span>' : ''}
+          <div class="count num">${fmtCount(sec)}</div>
+          <div class="sub">${s.test ? 'Test ends' : 'Sleeps'} at ${fmtClock(new Date(s.deadline))}</div>
+        </div>
+      </div>
+      <div class="chips" style="margin-top:18px">
+        <button class="chip" data-a="ext" data-v="15">+15 min</button>
+        <button class="chip" data-a="ext" data-v="60">+1 hour</button>
+      </div>
+      <button class="secondary" data-a="cancel">Cancel</button>
+      <div class="foot">Display may turn off · keep the lid open</div>`;
+  },
+  dragStart(v, e) { this.y = e.clientY; this.dragged = false; return true; },
+  dragMove(v, e) {
+    const dy = this.y - e.clientY;
+    if (Math.abs(dy) >= 8) { this.dragged = true; nudge(v, dy > 0 ? 1 : -1, 5); this.y = e.clientY; }
+  },
+};
+
+/* B — clock */
+const angleOf = d => ((d.getHours() % 12) * 60 + d.getMinutes() + d.getSeconds() / 60) / 2;
+const B = {
+  id: 'B', max: 715, liveRunning: true,
+  frame(s, now) { return bar(s, now) + `<div class="body">${s.mode === 'running' ? this.running(s, now) : this.setup(s, now)}</div>`; },
+  setup(s, now) {
+    return banner(s) + this.dial(s, now, s.min) + `
+      <div class="hint" style="margin-top:4px">Drag the moon, or scroll</div>
+      <button class="primary" data-a="start" style="margin-top:14px">Start <span class="k">↩</span></button>
+      ${testRow(s)}`;
+  },
+  running(s, now) {
+    return this.dial(s, now, left(s, now) / 60) + `
+      <div class="hint" style="margin-top:4px">Drag the moon to change it</div>
+      <div class="b-row">
+        <button class="chip" data-a="ext" data-v="15">+15 min</button>
+        <button class="chip" data-a="ext" data-v="60">+1 hour</button>
+        <button class="secondary" data-a="cancel">Cancel</button>
+      </div>
+      <div class="foot">Display may turn off · keep the lid open</div>`;
+  },
+  dial(s, now, min) {
+    const c = 130, R = 112;
+    const P = (a, r) => { const t = a * Math.PI / 180; return [(c + r * Math.sin(t)).toFixed(2), (c - r * Math.cos(t)).toFixed(2)]; };
+    const a0 = angleOf(now), a1 = a0 + Math.max(min, 0.5) / 2;
+    const [x0, y0] = P(a0, R), [x1, y1] = P(a1, R);
+    let marks = '';
+    for (let i = 0; i < 60; i++) {
+      const major = i % 5 === 0, [ax, ay] = P(i * 6, 95), [bx, by] = P(i * 6, major ? 88 : 91);
+      marks += `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" stroke="rgba(255,255,255,${major ? .32 : .12})" stroke-width="${major ? 1.5 : 1}" stroke-linecap="round"/>`;
+    }
+    for (const h of [3, 6, 9, 12]) { const [nx, ny] = P(h * 30, 78); marks += `<text class="d-num" x="${nx}" y="${ny}">${h}</text>`; }
+    const [t, ap] = splitClock(new Date(now.getTime() + min * 60000));
+    const center = s.mode === 'running'
+      ? `<text class="d-lab" x="130" y="102">${s.test ? 'TEST · LEFT' : 'TIME LEFT'}</text>
+         <text class="d-big" x="130" y="141">${fmtCount(min * 60)}</text>
+         <text class="d-sub" x="130" y="164">${s.test ? 'Ends' : 'Sleeps'} at ${t} ${ap}</text>`
+      : `<text class="d-lab" x="130" y="102">${s.test ? 'TEST ENDS AT' : 'SLEEPS AT'}</text>
+         <text class="d-big" x="130" y="141">${t}<tspan class="d-ap" dx="5">${ap}</tspan></text>
+         <text class="d-sub" x="130" y="164">in ${fmtDur(min)}</text>`;
+    return `<div class="dialwrap"><svg viewBox="0 0 260 260" data-drag data-wheel>
+      <circle cx="130" cy="130" r="${R}" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="24"/>
+      ${marks}
+      <path d="M${x0} ${y0} A${R} ${R} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1} ${y1}" fill="none" stroke="var(--accent)" stroke-width="24" stroke-linecap="round"/>
+      <circle cx="${x0}" cy="${y0}" r="7" fill="rgba(0,0,0,.28)"/><circle cx="${x0}" cy="${y0}" r="2.6" fill="#fff" opacity=".85"/>
+      <circle cx="${x1}" cy="${y1}" r="12" fill="#fff"/><text class="d-moon" x="${x1}" y="${y1}">☾</text>
+      ${center}
+    </svg></div>`;
+  },
+  point(e, el) {
+    const r = el.getBoundingClientRect(), k = 260 / r.width;
+    const x = (e.clientX - r.left) * k - 130, y = (e.clientY - r.top) * k - 130;
+    return { dist: Math.hypot(x, y), ang: (Math.atan2(x, -y) * 180 / Math.PI + 360) % 360 };
+  },
+  dragStart(v, e, el) { if (this.point(e, el).dist < 84) return false; this.dragMove(v, e, el, true); return true; },
+  dragMove(v, e, el, jump) {
+    let m = Math.round(((this.point(e, el).ang - angleOf(new Date()) + 360) % 360) * 2 / 5) * 5;
+    const prev = curMin(v.S);
+    // Stop at the ends instead of wrapping past "now".
+    if (!jump && prev > 600 && m < 120) m = 715;
+    if (!jump && prev < 120 && m > 600) m = 5;
+    setMin(v, m);
+  },
+};
+
+/* C — menu bar timeline */
+const hourLabel = h => h === 0 ? '12 AM' : h === 12 ? 'Noon' : h < 12 ? `${h} AM` : `${h - 12} PM`;
+const C = {
+  id: 'C', max: 720, liveRunning: true,
+  frame(s, now) {
+    const run = s.mode === 'running';
+    return `<div class="menubar"><span class="mine on">☾${run ? ` <span class="num">${fmtShort(left(s, now))}</span>` : ''}</span>${BATT}${WIFI}
+        <span>${now.toLocaleDateString('en-US', { weekday: 'short' })} ${fmtClock(now)}</span></div>
+      <div class="pop">${run ? this.running(s, now) : this.setup(s, now)}</div>`;
+  },
+  after(el) {
+    const m = el.querySelector('.mine');
+    el.querySelector('.pop').style.setProperty('--ax', m.offsetLeft + m.offsetWidth / 2 + 'px');
+  },
+  setup(s, now) {
+    const [t, ap] = splitClock(new Date(now.getTime() + s.min * 60000));
+    return banner(s) + `
+      <div class="c-head">
+        <div><div class="c-lab">${s.test ? 'Test ends at' : 'Mac sleeps at'}</div><div class="c-big num">${t}<span class="ap">${ap}</span></div></div>
+        <div class="c-dur">in <b>${fmtDur(s.min)}</b></div>
+      </div>
+      ${this.timeline(now, s.min)}
+      <div class="c-row">${testRow(s, 'Test run')}<button class="primary sm" data-a="start">Start <span class="k">↩</span></button></div>`;
+  },
+  running(s, now) {
+    const [t, ap] = splitClock(new Date(s.deadline));
+    return `
+      <div class="c-head">
+        <div><div class="c-lab">${s.test ? 'Test ends' : 'Mac sleeps'} at ${t} ${ap}</div><div class="c-big num">${fmtCount(left(s, now))}<span class="ap">left</span></div></div>
+        <div class="c-dur">${s.test ? '<span class="badge">TEST</span>' : ''}</div>
+      </div>
+      ${this.timeline(now, left(s, now) / 60)}
+      <div class="c-row">
+        <div class="chips"><button class="chip sm" data-a="ext" data-v="15">+15m</button><button class="chip sm" data-a="ext" data-v="60">+1h</button></div>
+        <button class="secondary sm" data-a="cancel">Cancel</button>
+      </div>`;
+  },
+  timeline(now, min) {
+    const W = 288, x = Math.min(1, Math.max(0, min) / 720) * W;
+    let marks = '';
+    for (let t = 60 - now.getMinutes() - now.getSeconds() / 60; t <= 720; t += 60) {
+      const px = t / 720 * W, h = new Date(now.getTime() + t * 60000).getHours();
+      marks += `<i class="tk${h % 3 === 0 ? ' maj' : ''}" style="left:${px}px"></i>`;
+      if (h % 3 === 0 && px > 30 && px < W - 14) marks += `<span class="tll" style="left:${px}px">${hourLabel(h)}</span>`;
+    }
+    return `<div class="tl" data-drag data-wheel>
+      <div class="track"><div class="fill" style="width:${x}px"></div></div>
+      ${marks}<span class="tll now">now</span>
+      <div class="knob" style="left:${x}px">☾</div>
+    </div>`;
+  },
+  dragStart(v, e, el) { this.dragMove(v, e, el); return true; },
+  dragMove(v, e, el) {
+    const r = el.getBoundingClientRect(), f = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    setMin(v, Math.round(f * 720 / 5) * 5);
+  },
+};
+
+/* Shared behaviour */
+const curMin = s => s.mode === 'running' ? Math.max(0, (s.deadline - Date.now()) / 60000) : s.min;
+function setMin(v, m) {
+  const s = v.S;
+  m = Math.max(5, Math.min(v.max, m));
+  if (s.mode === 'running') { s.deadline = Date.now() + m * 60000; s.total = Math.max(s.total, m * 60); }
+  else s.min = m;
+  v.render();
+}
+const snap = (cur, dir, size) => dir > 0 ? Math.floor(cur / size + 1e-6) * size + size : Math.ceil(cur / size - 1e-6) * size - size;
+function nudge(v, dir, size) { if (v.S.mode === 'running' && !v.liveRunning) return; setMin(v, snap(curMin(v.S), dir, size)); }
+function parse(text) {
+  const t = text.toLowerCase().replace(/\s+/g, '');
+  let m;
+  if ((m = t.match(/^(\d+):(\d{1,2})$/))) return +m[1] * 60 + +m[2];
+  if ((m = t.match(/^(\d+)$/))) return +m[1];
+  if ((m = t.match(/^(?:(\d+(?:\.\d+)?)h)?(?:(\d+)m?)?$/)) && (m[1] || m[2])) return Math.round((+m[1] || 0) * 60 + (+m[2] || 0));
+  return null;
+}
+function commitEdit(v) {
+  const s = v.S, m = parse(s.draft);
+  if (m) s.min = Math.max(1, Math.min(7 * 24 * 60, m));
+  s.editing = false;
+  v.render();
+}
+function start(v) {
+  const s = v.S;
+  if (s.editing) commitEdit(v);
+  Object.assign(s, { mode: 'running', banner: null, total: s.min * 60, deadline: Date.now() + s.min * 60000 });
+  clearInterval(v.tick);
+  v.tick = setInterval(() => {
+    if (Date.now() >= s.deadline) {
+      clearInterval(v.tick);
+      s.mode = 'setup';
+      s.banner = (s.test ? 'Test ended at ' : 'Slept at ') + fmtClock(new Date());
+    }
+    v.render();
+  }, 250);
+  v.render();
+}
+function onClick(v, e) {
+  const el = e.target.closest('[data-a]');
+  if (!el) return;
+  const a = el.dataset.a, s = v.S;
+  if (a === 'minus') nudge(v, -1, 15);
+  else if (a === 'plus') nudge(v, 1, 15);
+  else if (a === 'preset') { s.min = +el.dataset.v; s.editing = false; v.render(); }
+  else if (a === 'start') start(v);
+  else if (a === 'test') { s.test = !s.test; v.render(); }
+  else if (a === 'dismiss') { s.banner = null; v.render(); }
+  else if (a === 'ext') {
+    s.deadline = Math.min(s.deadline + el.dataset.v * 60000, Date.now() + v.max * 60000);
+    s.total = Math.max(s.total, left(s, Date.now()));
+    v.render();
+  }
+  else if (a === 'cancel') { clearInterval(v.tick); s.mode = 'setup'; v.render(); }
+  else if (a === 'time' && s.mode === 'setup' && !s.editing && !A.dragged) { s.editing = true; s.draft = ''; v.render(); }
+}
+
+let active = A, dragging = null;
+for (const v of [A, B, C]) {
+  const el = v.el = $('live' + v.id);
+  v.S = { mode: 'setup', min: 120, test: false, editing: false, draft: '', banner: null };
+  v.render = () => {
+    el.innerHTML = v.frame(v.S, new Date());
+    v.after?.(el);
+    const input = el.querySelector('input');
+    if (input && document.activeElement !== input) { input.focus(); input.select(); }
+  };
+  el.addEventListener('click', e => onClick(v, e));
+  el.addEventListener('pointerdown', e => {
+    active = v;
+    const target = e.target.closest('[data-drag]');
+    if (!target || v.S.editing || (v.S.mode === 'running' && !v.liveRunning)) return;
+    if (v.dragStart(v, e, target)) { dragging = v; if (v !== A) e.preventDefault(); }
+  });
+  el.addEventListener('wheel', e => {
+    if (!e.target.closest('[data-wheel]') || v.S.editing || (v.S.mode === 'running' && !v.liveRunning)) return;
+    e.preventDefault();
+    v.acc = (v.acc || 0) + e.deltaY - e.deltaX;
+    while (Math.abs(v.acc) >= 24) { nudge(v, v.acc < 0 ? 1 : -1, 5); v.acc -= Math.sign(v.acc) * 24; }
+  }, { passive: false });
+  el.addEventListener('input', e => { v.S.draft = e.target.value; });
+  el.addEventListener('focusout', e => { if (e.target.tagName === 'INPUT') setTimeout(() => v.S.editing && commitEdit(v), 0); });
+  v.render();
+}
+window.addEventListener('pointermove', e => { if (dragging) dragging.dragMove(dragging, e, dragging.el.querySelector('[data-drag]')); });
+window.addEventListener('pointerup', () => { dragging = null; setTimeout(() => A.dragged = false, 0); });
+document.addEventListener('keydown', e => {
+  const v = active, s = v.S;
+  if (s.editing) {
+    if (e.key === 'Enter') commitEdit(v);
+    if (e.key === 'Escape') { s.editing = false; v.render(); }
+    return;
+  }
+  if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { e.preventDefault(); nudge(v, 1, e.shiftKey ? 60 : 15); }
+  else if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { e.preventDefault(); nudge(v, -1, e.shiftKey ? 60 : 15); }
+  else if (e.key === 'Enter' && s.mode === 'setup') start(v);
+  else if (v === A && s.mode === 'setup' && /^[0-9]$/.test(e.key)) { s.editing = true; s.draft = ''; v.render(); }
+});
+
+// Static "running" snapshots: a 2 h timer started at 11:42 PM, 18 minutes in.
+const t0 = new Date(2026, 9, 14, 23, 42), tRun = new Date(t0.getTime() + 1098e3);
+for (const v of [A, B, C]) {
+  const el = $('run' + v.id);
+  el.innerHTML = v.frame({ mode: 'running', test: false, total: 7200, deadline: t0.getTime() + 7200e3 }, tRun);
+  v.after?.(el);
+}
+</script>
+</body>
+</html>
