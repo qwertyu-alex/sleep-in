@@ -1,2 +1,0 @@
-#!/bin/zsh
-exec /usr/bin/open -a "Sleep In"

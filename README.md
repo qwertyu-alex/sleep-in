@@ -40,8 +40,8 @@ of leaving it running all night. It even works with the lid closed.
   you cancel, when you unplug, and even if the timer crashes.
 - **App or Terminal.** A native SwiftUI app and a `sleep-in` command share one
   timer, so you can start it in one and check it from the other.
-- **Small and dependency-free.** Swift and Python's standard library. The
-  privileged helper runs only during a lid-closed session.
+- **Native and dependency-free.** All Swift, about 2 MB, with nothing else to
+  install. The privileged helper runs only during a lid-closed session.
 
 ## How it works
 
@@ -85,37 +85,41 @@ Sleep In runs on macOS 14 Sonoma or later on Apple silicon.
 1. Download [**Sleep-In.zip**](https://github.com/qwertyu-alex/sleep-in/releases/latest/download/Sleep-In.zip)
    from the [latest release](https://github.com/qwertyu-alex/sleep-in/releases/latest),
    unzip it, and move **Sleep In** to your Applications folder.
-2. The timer uses Python 3 from Apple's Command Line Tools. If you don't have
-   them yet, run `xcode-select --install` once.
-3. Open **Sleep In**. The app is signed and notarized by Apple.
+2. Open **Sleep In**. The app is signed and notarized by Apple.
 
 To also use the `sleep-in` command in Terminal, link it from the app and add
 `~/.local/bin` to your `PATH`:
 
 ```sh
 mkdir -p ~/.local/bin
-ln -s "/Applications/Sleep In.app/Contents/Resources/sleep-in" ~/.local/bin/sleep-in
+ln -s "/Applications/Sleep In.app/Contents/MacOS/sleep-in" ~/.local/bin/sleep-in
 ```
 
 ### Build from source
 
-Building needs Apple's Command Line Tools and a **Developer ID Application**
-signing certificate from the Apple Developer Program. Lid-closed mode's
-privileged helper only trusts code signed by the same Developer ID team. The
-terminal command works without the app, except for `--lid-closed`.
+Building needs Apple's Command Line Tools (`xcode-select --install`) and a
+**Developer ID Application** signing certificate from the Apple Developer
+Program. Lid-closed mode's privileged helper only trusts code signed by the
+same Developer ID team.
 
 ```sh
 git clone https://github.com/qwertyu-alex/sleep-in.git
 cd sleep-in
 ./gui/build.sh
 mkdir -p ~/.local/bin
-ln -s "$PWD/bin/sleep-in" "$PWD/bin/sleep-in-gui" ~/.local/bin/
+ln -s "$HOME/Applications/Sleep In.app/Contents/MacOS/sleep-in" ~/.local/bin/sleep-in
 ```
 
-`build.sh` compiles, signs, and installs `~/Applications/Sleep In.app`. The app
-carries its own copy of the timer, so rerun `./gui/build.sh` after editing
-anything in `bin/` or `gui/`. The terminal links point into your clone, so the
-`sleep-in` command picks up edits right away.
+`build.sh` compiles, signs, and installs `~/Applications/Sleep In.app`,
+including the `sleep-in` command. Rerun it after editing anything in `cli/` or
+`gui/`.
+
+Without a Developer ID, you can still build the terminal command on its own.
+Everything but `--lid-closed` works:
+
+```sh
+xcrun swiftc -O cli/*.swift -o ~/.local/bin/sleep-in
+```
 
 ## Using the app
 
@@ -273,14 +277,16 @@ Touch ID approval makes sure only you can start it. See
 2. Turn off **Sleep In** under System Settings → General → Login Items &
    Extensions.
 3. Move **Sleep In** from Applications to the Trash.
-4. Remove `~/.local/share/sleep-in/` and any `sleep-in` or `sleep-in-gui` links
-   in `~/.local/bin/`.
+4. Remove `~/.local/share/sleep-in/` and the `~/.local/bin/sleep-in` link, if
+   you made one.
 
 ## Development
 
-- `bin/sleep-in`: the Python timer and macOS keep-awake and sleep controls.
-- `bin/lid_awake.py`: the timer's side of a lid-closed session.
-- `bin/sleep-in-gui`: opens the installed Mac app.
+- `cli/`: the `sleep-in` command, which runs every timer, including the app's.
+  - `Command.swift`: arguments, and `status`, `extend`, and `cancel`.
+  - `Timer.swift`: the countdown, keep-awake, final sleep request, and state.
+  - `LidSession.swift`: the timer's side of a lid-closed session.
+  - `System.swift`: processes and sockets.
 - `gui/SleepIn.swift`: the native SwiftUI window and countdown controls.
 - `gui/LidAwakeDaemon.swift`: the root launch daemon that changes lid-close
   sleep for one session at a time.
@@ -325,9 +331,7 @@ Set `SLEEP_IN_NOTARY_PROFILE` to use a profile with another name.
 Automated checks do not change system power settings or ask for a password:
 
 ```sh
-python3 -m unittest discover -s tests -v
-xcrun swiftc gui/LidSleepPolicy.swift tests/LidSleepPolicyTests.swift -o /tmp/sleep-in-policy-tests
-/tmp/sleep-in-policy-tests
+./tests/run.sh
 ```
 
 To check on hardware, start a timer with lid-closed mode enabled, approve with

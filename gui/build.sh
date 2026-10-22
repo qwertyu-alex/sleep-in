@@ -28,7 +28,6 @@ fi
 
 mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources" "$app_dir/Contents/Library/LaunchDaemons"
 cp "$source_dir/Resources/SleepIn.icns" "$app_dir/Contents/Resources/SleepIn.icns"
-cp "$source_dir/../bin/sleep-in" "$source_dir/../bin/lid_awake.py" "$app_dir/Contents/Resources/"
 
 xcrun swiftc -O -swift-version 5 -target arm64-apple-macosx14.0 \
   "$source_dir/LidSleepPolicy.swift" "$source_dir/LidAwakeService.swift" "$source_dir/LidAwakeDaemon.swift" \
@@ -37,6 +36,9 @@ xcrun swiftc -O -swift-version 5 -target arm64-apple-macosx14.0 \
 xcrun swiftc -O -swift-version 5 -target arm64-apple-macosx14.0 \
   "$source_dir/LidAwakeService.swift" "$source_dir/LidAwakeClient.swift" \
   -o "$app_dir/Contents/MacOS/SleepInLidClient"
+
+xcrun swiftc -O -swift-version 5 -target arm64-apple-macosx14.0 \
+  "$source_dir"/../cli/*.swift -o "$app_dir/Contents/MacOS/sleep-in"
 
 xcrun swiftc -O -swift-version 5 -target arm64-apple-macosx14.0 \
   "$source_dir/SleepIn.swift" -o "$app_dir/Contents/MacOS/SleepIn"
@@ -74,6 +76,7 @@ PLIST
 sign=(codesign --force --options runtime --timestamp --sign "$identity")
 "${sign[@]}" --identifier "$daemon_label" "$app_dir/Contents/MacOS/SleepInLidDaemon"
 "${sign[@]}" --identifier io.github.qwertyu-alex.sleep-in.lid-client "$app_dir/Contents/MacOS/SleepInLidClient"
+"${sign[@]}" --identifier io.github.qwertyu-alex.sleep-in.timer "$app_dir/Contents/MacOS/sleep-in"
 "${sign[@]}" "$app_dir"
 codesign --verify --deep --strict "$app_dir"
 if [[ -n $output ]]; then

@@ -9,17 +9,14 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Python tests
-        run: python3 -m unittest discover -s tests -v
-      - name: Swift policy tests
-        run: |
-          xcrun swiftc gui/LidSleepPolicy.swift tests/LidSleepPolicyTests.swift -o "$RUNNER_TEMP/policy-tests"
-          "$RUNNER_TEMP/policy-tests"
-      # build.sh needs a Developer ID to sign, so only check that the app compiles.
+      - name: Tests
+        run: ./tests/run.sh
+      # build.sh needs a Developer ID to sign, so only check that everything compiles.
       - name: Compile app
-        working-directory: gui
         run: |
           flags=(-O -swift-version 5 -target arm64-apple-macosx14.0)
+          xcrun swiftc "${flags[@]}" cli/*.swift -o "$RUNNER_TEMP/sleep-in"
+          cd gui
           xcrun swiftc "${flags[@]}" LidSleepPolicy.swift LidAwakeService.swift LidAwakeDaemon.swift -o "$RUNNER_TEMP/SleepInLidDaemon"
           xcrun swiftc "${flags[@]}" LidAwakeService.swift LidAwakeClient.swift -o "$RUNNER_TEMP/SleepInLidClient"
           xcrun swiftc "${flags[@]}" SleepIn.swift -o "$RUNNER_TEMP/SleepIn"
