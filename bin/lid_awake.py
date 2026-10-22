@@ -10,9 +10,17 @@ import tempfile
 import time
 
 
+def default_helper():
+    """The client in the app that contains this script, or else in an installed copy of the app."""
+    client = 'Sleep In.app/Contents/MacOS/SleepInLidClient'
+    candidates = [Path(__file__).resolve().parents[1] / 'MacOS/SleepInLidClient',
+                  Path.home() / 'Applications' / client, Path('/Applications') / client]
+    return next((path for path in candidates if path.is_file()), candidates[-1])
+
+
 class LidSession:
     def __init__(self, helper=None):
-        self.helper = helper or Path.home() / 'Applications/Sleep In.app/Contents/MacOS/SleepInLidClient'
+        self.helper = helper or default_helper()
         self.directory = None
         self.listener = None
         self.connection = None
@@ -23,7 +31,7 @@ class LidSession:
 
     def start(self, cancelled):
         if not self.helper.is_file():
-            raise RuntimeError('Rebuild Sleep In with ./gui/build.sh before using lid-closed mode.')
+            raise RuntimeError('Install the Sleep In app in Applications before using lid-closed mode.')
         # /tmp keeps the AF_UNIX path below macOS's 104-byte limit.
         self.directory = tempfile.TemporaryDirectory(prefix='sleep-in-lid-', dir='/tmp')
         path = str(Path(self.directory.name) / 'helper.sock')

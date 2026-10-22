@@ -16,6 +16,10 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/qwertyu-alex/sleep-in/releases/latest"><img src="https://img.shields.io/github/v/release/qwertyu-alex/sleep-in?label=Download%20for%20Mac&color=6c6af2&style=for-the-badge&logo=apple&logoColor=white" alt="Download for Mac"></a>
+</p>
+
+<p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/hero-dark.png">
     <img src="docs/images/hero-light.png" width="776" alt="The Sleep In window set to two hours with lid-closed mode on, next to a running countdown with 1:47:12 left">
@@ -76,40 +80,46 @@ of leaving it running all night. It even works with the lid closed.
 
 ## Install
 
-You need:
+Sleep In runs on macOS 14 Sonoma or later on Apple silicon.
 
-- macOS 14 Sonoma or later on Apple silicon.
-- Apple's Command Line Tools (`xcode-select --install`), which provide Swift
-  and Python 3. Python 3.9 or later works; there are no third-party
-  dependencies.
-- To build the Mac app: a **Developer ID Application** signing certificate from
-  the Apple Developer Program. Lid-closed mode's privileged helper only trusts
-  code signed by the same Developer ID team. The terminal command works without
-  the app, except for `--lid-closed`.
+1. Download [**Sleep-In.zip**](https://github.com/qwertyu-alex/sleep-in/releases/latest/download/Sleep-In.zip)
+   from the [latest release](https://github.com/qwertyu-alex/sleep-in/releases/latest),
+   unzip it, and move **Sleep In** to your Applications folder.
+2. The timer uses Python 3 from Apple's Command Line Tools. If you don't have
+   them yet, run `xcode-select --install` once.
+3. Open **Sleep In**. The app is signed and notarized by Apple.
 
-Then:
+To also use the `sleep-in` command in Terminal, link it from the app and add
+`~/.local/bin` to your `PATH`:
+
+```sh
+mkdir -p ~/.local/bin
+ln -s "/Applications/Sleep In.app/Contents/Resources/sleep-in" ~/.local/bin/sleep-in
+```
+
+### Build from source
+
+Building needs Apple's Command Line Tools and a **Developer ID Application**
+signing certificate from the Apple Developer Program. Lid-closed mode's
+privileged helper only trusts code signed by the same Developer ID team. The
+terminal command works without the app, except for `--lid-closed`.
 
 ```sh
 git clone https://github.com/qwertyu-alex/sleep-in.git
 cd sleep-in
+./gui/build.sh
 mkdir -p ~/.local/bin
 ln -s "$PWD/bin/sleep-in" "$PWD/bin/sleep-in-gui" ~/.local/bin/
-./gui/build.sh
 ```
 
 `build.sh` compiles, signs, and installs `~/Applications/Sleep In.app`. The app
-runs the timer through `~/.local/bin/sleep-in`, so that link is needed even if
-you only use the app. Add `~/.local/bin` to your `PATH` to use the commands in
-Terminal.
-
-The links point into your clone, so keep it where it is. Edits to
-`bin/sleep-in` apply to the next timer run; rerun `./gui/build.sh` after
-editing Swift.
+carries its own copy of the timer, so rerun `./gui/build.sh` after editing
+anything in `bin/` or `gui/`. The terminal links point into your clone, so the
+`sleep-in` command picks up edits right away.
 
 ## Using the app
 
-Open **Sleep In** from Spotlight or `~/Applications`, or run `sleep-in-gui` in
-Terminal. It opens with the duration you used last.
+Open **Sleep In** from Spotlight or your Applications folder. It opens with the duration you used last.
 
 | To | Do this |
 | --- | --- |
@@ -262,9 +272,9 @@ Touch ID approval makes sure only you can start it. See
 1. Quit Sleep In and run `sleep-in cancel`.
 2. Turn off **Sleep In** under System Settings → General → Login Items &
    Extensions.
-3. Remove `~/Applications/Sleep In.app`, `~/.local/bin/sleep-in`,
-   `~/.local/bin/sleep-in-gui`, and `~/.local/share/sleep-in/`.
-4. Delete your clone of this repository.
+3. Move **Sleep In** from Applications to the Trash.
+4. Remove `~/.local/share/sleep-in/` and any `sleep-in` or `sleep-in-gui` links
+   in `~/.local/bin/`.
 
 ## Development
 
@@ -280,6 +290,7 @@ Touch ID approval makes sure only you can start it. See
   shared by both.
 - `gui/LidSleepPolicy.swift`: when the daemon enables and restores sleep.
 - `gui/build.sh`: compiles, signs, and installs the app.
+- `gui/release.sh`: builds, notarizes, and publishes a release.
 - `gui/Resources/`: the moon-and-countdown logo for the app, Dock, and Finder.
 - `docs/images/`: screenshots for this README.
 - `design/`: the original interface mockup.
@@ -295,6 +306,19 @@ keeps going; quit and reopen Sleep In afterward to use the new version.
 The logo source is `gui/Resources/SleepIn.png`. After changing it, run
 `./gui/build-icon.sh` to regenerate all standard and Retina icon sizes, then
 `./gui/build.sh` to install the updated icon.
+
+### Releasing
+
+`./gui/release.sh 1.0.0` builds the app into `dist/`, has Apple notarize it,
+staples the notarization ticket, and publishes `Sleep-In.zip` as the GitHub
+release `v1.0.0`. Pass a Markdown file as a second argument to use it as the
+release notes. It needs a notarytool keychain profile, created once:
+
+```sh
+xcrun notarytool store-credentials sleep-in-notary --apple-id EMAIL --team-id TEAM_ID
+```
+
+Set `SLEEP_IN_NOTARY_PROFILE` to use a profile with another name.
 
 ### Tests
 

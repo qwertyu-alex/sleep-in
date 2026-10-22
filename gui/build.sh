@@ -4,10 +4,17 @@ set -eu
 source_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
 installed="$HOME/Applications/Sleep In.app"
 daemon_label="io.github.qwertyu-alex.sleep-in.lid-daemon"
-mkdir -p "$HOME/Applications"
-# Build beside the installed app, then swap it in whole; a running timer keeps its loaded copy.
-staging="$(mktemp -d "$HOME/Applications/.sleep-in-build.XXXXXX")"
-trap 'rm -rf "$staging"' EXIT
+version="${SLEEP_IN_VERSION:-1.0.0}"
+# SLEEP_IN_OUTPUT builds into that directory instead of installing, for releases.
+output="${SLEEP_IN_OUTPUT:-}"
+if [[ -n $output ]]; then
+  staging="$output"
+else
+  mkdir -p "$HOME/Applications"
+  # Build beside the installed app, then swap it in whole; a running timer keeps its loaded copy.
+  staging="$(mktemp -d "$HOME/Applications/.sleep-in-build.XXXXXX")"
+  trap 'rm -rf "$staging"' EXIT
+fi
 app_dir="$staging/Sleep In.app"
 
 # Lid-closed mode's root daemon only trusts code signed by the same Developer ID team.
@@ -21,6 +28,7 @@ fi
 
 mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources" "$app_dir/Contents/Library/LaunchDaemons"
 cp "$source_dir/Resources/SleepIn.icns" "$app_dir/Contents/Resources/SleepIn.icns"
+cp "$source_dir/../bin/sleep-in" "$source_dir/../bin/lid_awake.py" "$app_dir/Contents/Resources/"
 
 xcrun swiftc -O -swift-version 5 -target arm64-apple-macosx14.0 \
   "$source_dir/LidSleepPolicy.swift" "$source_dir/LidAwakeService.swift" "$source_dir/LidAwakeDaemon.swift" \
@@ -33,7 +41,7 @@ xcrun swiftc -O -swift-version 5 -target arm64-apple-macosx14.0 \
 xcrun swiftc -O -swift-version 5 -target arm64-apple-macosx14.0 \
   "$source_dir/SleepIn.swift" -o "$app_dir/Contents/MacOS/SleepIn"
 
-cat > "$app_dir/Contents/Info.plist" <<'PLIST'
+cat > "$app_dir/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
@@ -43,8 +51,8 @@ cat > "$app_dir/Contents/Info.plist" <<'PLIST'
   <key>CFBundleDisplayName</key><string>Sleep In</string>
   <key>CFBundleIconFile</key><string>SleepIn</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>1.0</string>
-  <key>CFBundleVersion</key><string>1</string>
+  <key>CFBundleShortVersionString</key><string>$version</string>
+  <key>CFBundleVersion</key><string>$version</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>NSHighResolutionCapable</key><true/>
 </dict></plist>
@@ -68,6 +76,10 @@ sign=(codesign --force --options runtime --timestamp --sign "$identity")
 "${sign[@]}" --identifier io.github.qwertyu-alex.sleep-in.lid-client "$app_dir/Contents/MacOS/SleepInLidClient"
 "${sign[@]}" "$app_dir"
 codesign --verify --deep --strict "$app_dir"
+if [[ -n $output ]]; then
+  print -r -- "Built $app_dir"
+  exit 0
+fi
 
 [[ -e $installed ]] && mv "$installed" "$staging/previous.app"
 mv "$app_dir" "$installed" || { mv "$staging/previous.app" "$installed"; exit 1; }

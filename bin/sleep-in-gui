@@ -1,2 +1,2 @@
 #!/bin/zsh
-exec /usr/bin/open "$HOME/Applications/Sleep In.app"
+exec /usr/bin/open -a "Sleep In"

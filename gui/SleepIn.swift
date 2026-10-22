@@ -134,8 +134,8 @@ final class TimerModel: ObservableObject {
     private var finalEvent: TimerEvent?
     private var cancelled = false
 
-    private static let command = FileManager.default.homeDirectoryForCurrentUser
-        .appendingPathComponent(".local/bin/sleep-in")
+    // The timer script ships inside the app.
+    private static let command = Bundle.main.resourceURL!.appendingPathComponent("sleep-in")
     // An explicit isolated state directory allows safe local verification.
     private static let stateArguments = ProcessInfo.processInfo.environment["SLEEP_IN_STATE_DIR"]
         .map { ["--state-dir", $0] } ?? []
