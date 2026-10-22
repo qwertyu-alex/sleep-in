@@ -40,8 +40,8 @@ of leaving it running all night. It even works with the lid closed.
   you cancel, when you unplug, and even if the timer crashes.
 - **App or Terminal.** A native SwiftUI app and a `sleep-in` command share one
   timer, so you can start it in one and check it from the other.
-- **Native and dependency-free.** All Swift, about 2 MB, with nothing else to
-  install. The privileged helper runs only during a lid-closed session.
+- **Native and up to date.** All Swift, with nothing else to install, and it
+  updates itself. The privileged helper runs only during a lid-closed session.
 
 ## How it works
 
@@ -87,6 +87,11 @@ Sleep In runs on macOS 14 Sonoma or later on Apple silicon.
    unzip it, and move **Sleep In** to your Applications folder.
 2. Open **Sleep In**. The app is signed and notarized by Apple.
 
+Sleep In keeps itself up to date. It checks for a new version once a day,
+downloads it in the background, and installs it the next time you quit. To
+check now, choose **Sleep In → Check for Updates…**. Versions before 1.2.0
+can't update themselves; download the latest release once to get updates.
+
 To also use the `sleep-in` command in Terminal, link it from the app and add
 `~/.local/bin` to your `PATH`:
 
@@ -112,7 +117,8 @@ ln -s "$HOME/Applications/Sleep In.app/Contents/MacOS/sleep-in" ~/.local/bin/sle
 
 `build.sh` compiles, signs, and installs `~/Applications/Sleep In.app`,
 including the `sleep-in` command. Rerun it after editing anything in `cli/` or
-`gui/`.
+`gui/`. Builds from source don't update themselves, so a download never replaces
+your own build.
 
 Without a Developer ID, you can still build the terminal command on its own.
 Everything but `--lid-closed` works:
@@ -297,6 +303,9 @@ Touch ID approval makes sure only you can start it. See
 - `gui/LidSleepPolicy.swift`: when the daemon enables and restores sleep.
 - `gui/build.sh`: compiles, signs, and installs the app.
 - `gui/release.sh`: builds, notarizes, and publishes a release.
+- `gui/appcast.sh`: writes the update feed that installed copies check.
+- `gui/fetch-sparkle.sh`: downloads the pinned [Sparkle](https://sparkle-project.org)
+  release into `build/` and checks its checksum.
 - `gui/Resources/`: the moon-and-countdown logo for the app, Dock, and Finder.
 - `docs/images/`: screenshots for this README.
 - `design/`: the original interface mockup.
@@ -315,16 +324,26 @@ The logo source is `gui/Resources/SleepIn.png`. After changing it, run
 
 ### Releasing
 
-`./gui/release.sh 1.0.0` builds the app into `dist/`, has Apple notarize it,
-staples the notarization ticket, and publishes `Sleep-In.zip` as the GitHub
-release `v1.0.0`. Pass a Markdown file as a second argument to use it as the
-release notes. It needs a notarytool keychain profile, created once:
+`./gui/release.sh 1.2.0 notes.md` builds the app into `dist/`, has Apple
+notarize it, staples the notarization ticket, and publishes the GitHub release
+`v1.2.0` with `notes.md` as its notes. Without a notes file, GitHub writes them.
+The release includes `Sleep-In.zip` and `appcast.xml`, the update feed that
+installed copies check through
+`releases/latest/download/appcast.xml`. Each new release becomes the update.
+
+Releasing needs two credentials, created once:
 
 ```sh
+# Apple notarization, saved in your keychain
 xcrun notarytool store-credentials sleep-in-notary --apple-id EMAIL --team-id TEAM_ID
+# The update signing key, saved in your keychain
+"$(./gui/fetch-sparkle.sh)/bin/generate_keys"
 ```
 
-Set `SLEEP_IN_NOTARY_PROFILE` to use a profile with another name.
+Sparkle only installs updates signed with that key, so back it up with
+`"$(./gui/fetch-sparkle.sh)/bin/generate_keys" -x private-key-file` and keep the file
+somewhere safe. Without it, installed copies can't be updated. Set
+`SLEEP_IN_NOTARY_PROFILE` to use a notarization profile with another name.
 
 ### Tests
 
@@ -345,4 +364,5 @@ opening a pull request.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). Updates use [Sparkle](https://sparkle-project.org), whose
+license ships inside the app as `Sparkle License.txt`.

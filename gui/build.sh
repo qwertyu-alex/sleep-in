@@ -16,6 +16,15 @@ else
   trap 'rm -rf "$staging"' EXIT
 fi
 app_dir="$staging/Sleep In.app"
+sparkle="$("$source_dir/fetch-sparkle.sh")"
+# Only release builds update themselves, so a local build is never replaced by a download.
+update_keys=""
+if [[ -n ${SLEEP_IN_FEED_URL:-} ]]; then
+  update_keys="  <key>SUFeedURL</key><string>$SLEEP_IN_FEED_URL</string>
+  <key>SUPublicEDKey</key><string>${SLEEP_IN_UPDATE_KEY:?Set SLEEP_IN_UPDATE_KEY with SLEEP_IN_FEED_URL}</string>
+  <key>SUEnableAutomaticChecks</key><true/>
+  <key>SUAutomaticallyUpdate</key><true/>"
+fi
 
 # Lid-closed mode's root daemon only trusts code signed by the same Developer ID team.
 identity="${SLEEP_IN_SIGNING_IDENTITY:-$(security find-identity -v -p codesigning |
@@ -26,8 +35,13 @@ if [[ -z $identity ]]; then
   exit 1
 fi
 
-mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources" "$app_dir/Contents/Library/LaunchDaemons"
+mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources" "$app_dir/Contents/Library/LaunchDaemons" "$app_dir/Contents/Frameworks"
 cp "$source_dir/Resources/SleepIn.icns" "$app_dir/Contents/Resources/SleepIn.icns"
+cp "$sparkle/LICENSE" "$app_dir/Contents/Resources/Sparkle License.txt"
+framework="$app_dir/Contents/Frameworks/Sparkle.framework"
+ditto "$sparkle/Sparkle.framework" "$framework"
+# Sparkle's XPC services are only needed by sandboxed apps.
+rm -rf "$framework/Versions/B/XPCServices" "$framework/XPCServices"
 
 xcrun swiftc -O -swift-version 5 -target arm64-apple-macosx14.0 \
   "$source_dir/LidSleepPolicy.swift" "$source_dir/LidAwakeService.swift" "$source_dir/LidAwakeDaemon.swift" \
@@ -41,6 +55,7 @@ xcrun swiftc -O -swift-version 5 -target arm64-apple-macosx14.0 \
   "$source_dir"/../cli/*.swift -o "$app_dir/Contents/MacOS/sleep-in"
 
 xcrun swiftc -O -swift-version 5 -target arm64-apple-macosx14.0 \
+  -F "$sparkle" -framework Sparkle -Xlinker -rpath -Xlinker @executable_path/../Frameworks \
   "$source_dir/SleepIn.swift" -o "$app_dir/Contents/MacOS/SleepIn"
 
 cat > "$app_dir/Contents/Info.plist" <<PLIST
@@ -57,6 +72,7 @@ cat > "$app_dir/Contents/Info.plist" <<PLIST
   <key>CFBundleVersion</key><string>$version</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>NSHighResolutionCapable</key><true/>
+$update_keys
 </dict></plist>
 PLIST
 
@@ -77,6 +93,9 @@ sign=(codesign --force --options runtime --timestamp --sign "$identity")
 "${sign[@]}" --identifier "$daemon_label" "$app_dir/Contents/MacOS/SleepInLidDaemon"
 "${sign[@]}" --identifier io.github.qwertyu-alex.sleep-in.lid-client "$app_dir/Contents/MacOS/SleepInLidClient"
 "${sign[@]}" --identifier io.github.qwertyu-alex.sleep-in.timer "$app_dir/Contents/MacOS/sleep-in"
+"${sign[@]}" "$framework/Versions/B/Autoupdate"
+"${sign[@]}" "$framework/Versions/B/Updater.app"
+"${sign[@]}" "$framework"
 "${sign[@]}" "$app_dir"
 codesign --verify --deep --strict "$app_dir"
 if [[ -n $output ]]; then

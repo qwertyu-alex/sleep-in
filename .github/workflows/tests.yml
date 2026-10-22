@@ -19,4 +19,5 @@ jobs:
           cd gui
           xcrun swiftc "${flags[@]}" LidSleepPolicy.swift LidAwakeService.swift LidAwakeDaemon.swift -o "$RUNNER_TEMP/SleepInLidDaemon"
           xcrun swiftc "${flags[@]}" LidAwakeService.swift LidAwakeClient.swift -o "$RUNNER_TEMP/SleepInLidClient"
-          xcrun swiftc "${flags[@]}" SleepIn.swift -o "$RUNNER_TEMP/SleepIn"
+          sparkle="$(./fetch-sparkle.sh)"
+          xcrun swiftc "${flags[@]}" -F "$sparkle" -framework Sparkle SleepIn.swift -o "$RUNNER_TEMP/SleepIn"

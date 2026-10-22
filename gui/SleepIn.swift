@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import ServiceManagement
+import Sparkle
 import SwiftUI
 
 struct TimerEvent: Decodable {
@@ -804,6 +805,9 @@ struct TimerView: View {
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private let model = TimerModel()
+    // Release builds name an update feed; Sparkle checks it daily and installs updates when the app quits.
+    private let updates = Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") == nil
+        ? nil : SPUStandardUpdaterController(updaterDelegate: nil, userDriverDelegate: nil)
     private var window: NSWindow?
     private var keyMonitor: Any?
     private var titleUpdates: AnyCancellable?
@@ -813,6 +817,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let appItem = NSMenuItem()
         let appMenu = NSMenu()
         appMenu.addItem(withTitle: "About Sleep In", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        if let updates {
+            appMenu.addItem(withTitle: "Check for Updates…", action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)), keyEquivalent: "")
+                .target = updates
+        }
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Quit Sleep In", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = appMenu
